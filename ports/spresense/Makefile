@@ -14,6 +14,8 @@ SPR_SDKBSP_INC = $(SPR_BASE)/sdk/bsp/include
 SPR_SDKMOD_INC = $(SPR_BASE)/sdk/modules/include
 SPR_NUTTX_INC  = $(SPR_BASE)/nuttx/include
 SPR_SDKLIBS    = $(SPR_BASE)/sdk/libs
+SPR_TOOLTOP    = $(SPR_BASE)/sdk/tools/linux
+SPR_MKSPK      = $(SPR_TOOLTOP)/mkspk
 TMP_GCCLIB = "/usr/bin/../lib/gcc/arm-none-eabi/6.2.1/thumb/v7e-m/fpv4-sp/hard/libgcc.a"
 
 SPR_LDFILE = $(SPR_BASE)/nuttx/build/ramconfig.ld
@@ -55,11 +57,12 @@ LDFLAGS = \
 	-nostartfiles		\
 	-nodefaultlibs	\
 	-g							\
-	-Map=$(SPRESENSE_PORT)/nuttx.map	\
+	-Map=$(SPRESENSE_PORT)/mpython.map\
 	--cref														\
 	--defsym __stack=_vectors+1572864	\
 	-T$(SPR_LDFILE)										\
 	-L$(SPR_SDKLIBS)									\
+  --gc-sections                     \
 	--start-group											\
 	-lsdk															\
 	-lapps														\
@@ -75,7 +78,10 @@ CFLAGS += -Os -DNDEBUG
 CFLAGS += -fdata-sections -ffunction-sections
 endif
 
-LIBS =
+LIBS = \
+	-lsdk															\
+	-lapps														\
+	$(TMP_GCCLIB)											\
 
 # lib/utils/printf.c \
 # lib/utils/stdout_helpers.c \
@@ -90,16 +96,21 @@ SRC_C = \
 
 OBJ = $(PY_CORE_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 
-all: $(BUILD)/firmware.elf
+# all: $(BUILD)/mpython.elf
+all: mpython.spk
 
 $(BUILD)/_frozen_mpy.c: frozentest.mpy $(BUILD)/genhdr/qstrdefs.generated.h
 	$(ECHO) "MISC freezing bytecode"
 	$(Q)$(TOP)/tools/mpy-tool.py -f -q $(BUILD)/genhdr/qstrdefs.preprocessed.h -mlongint-impl=none $< > $@
 
-$(BUILD)/firmware.elf: $(OBJ)
+$(BUILD)/mpython.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(Q)$(SIZE) $@
+
+mpython.spk: $(BUILD)/mpython.elf
+	$(ECHO) "SPK $@"
+	$(SPR_MKSPK) -c 2 $^ nuttx $@ >/dev/null
 
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
 	$(Q)$(OBJCOPY) -O binary -j .isr_vector -j .text -j .data $^ $(BUILD)/firmware.bin

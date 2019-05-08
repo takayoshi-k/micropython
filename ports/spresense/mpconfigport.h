@@ -93,7 +93,7 @@ typedef long mp_off_t;
 // #endif
 
 // #ifdef __thumb__
-#define MICROPY_MIN_USE_CORTEX_CPU (1)
+// #define MICROPY_MIN_USE_CORTEX_CPU (1)
 // #define MICROPY_MIN_USE_STM32_MCU (1)
 // #endif
 
