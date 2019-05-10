@@ -26,21 +26,35 @@ void do_str(const char *src, mp_parse_input_kind_t input_kind) {
 }
 #endif
 
+/* TODO for spresense porting */
+/*  - move the heap memory to unused memry tile */
+
 static char *stack_top;
 #if MICROPY_ENABLE_GC
 static char heap[2048];
 #endif
 
+#define T() printf("%s(%d)\n", __FILE__, __LINE__)
+
+// #define ENABLE_MPYTHON_AS_COMMAND
+#ifdef ENABLE_MPYTHON_AS_COMMAND
 int mpython_main(int argc, char **argv) {
+#else // ENABLE_MPYTHON_AS_COMMAND
+int spresense_main(int argc, char **argv) {
+#endif // ENABLE_MPYTHON_AS_COMMAND
     int stack_dummy;
     stack_top = (char*)&stack_dummy;
 
+T();
 #if MICROPY_ENABLE_GC
+T();
     gc_init(heap, heap + sizeof(heap));
 #endif
+T();
     mp_init();
 #if MICROPY_ENABLE_COMPILER
 #  if MICROPY_REPL_EVENT_DRIVEN
+T();
     pyexec_event_repl_init();
     for (;;) {
         int c = mp_hal_stdin_rx_chr();
@@ -49,14 +63,18 @@ int mpython_main(int argc, char **argv) {
         }
     }
 #  else
+T();
     pyexec_friendly_repl();
 #  endif
     //do_str("print('hello world!', list(x+1 for x in range(10)), end='eol\\n')", MP_PARSE_SINGLE_INPUT);
     //do_str("for i in range(10):\r\n  print(i)", MP_PARSE_FILE_INPUT);
 #else
+T();
     pyexec_frozen_module("frozentest.py");
 #endif
+T();
     mp_deinit();
+T();
     return 0;
 }
 
